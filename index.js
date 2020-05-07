@@ -91,7 +91,7 @@ const validateWebhook = (token, auth) => {
 const validateSignatureHeader = (payloadBody, auth, signatureHeader) => {
   const calculatedToken = crypto.createHmac('sha256', auth.consumer_secret).update(payloadBody).digest('base64');
 
-  return crypto.timingSafeEqual(calculatedToken, Buffer.from(signatureHeader.slice("sha256=".length), 'utf8'));
+  return crypto.timingSafeEqual(Buffer.from(calculatedToken, 'base64'), Buffer.from(signatureHeader.slice("sha256=".length), 'base64'));
 }
 
 const verifyCredentials = async (auth) => {
