@@ -167,13 +167,15 @@ class Autohook extends EventEmitter {
         });
         req.on('end', () => {
 
-          if(validateWebhookSignature) {
+          if(this.validateWebhookSignature) {
             const webhookRequestSignature = req.headers['x-twitter-webhooks-signature'];
             const validSignatureHeader = validateSignatureHeader(Buffer.from(body).toString(), this.auth, webhookRequestSignature);
 
             if(!validSignatureHeader) {
               res.writeHead(403); // Action not allowed
               res.end();
+            } else {
+              console.log("x-twitter-webhooks-signature validation:",validSignatureHeader)
             }
           }
 
