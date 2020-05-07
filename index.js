@@ -156,13 +156,15 @@ class Autohook extends EventEmitter {
       if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
 
         let body = '';
+        let bodyBuffer = [];
         req.on('data', chunk => {
           body += chunk.toString();
+          bodyBuffer.push(chunk)
         });
         req.on('end', () => {
 
           const webhookRequestSignature = req.headers['x-twitter-webhooks-signature'];
-          const validSignatureHeader = validateSignatureHeader(body, this.auth, webhookRequestSignature);
+          const validSignatureHeader = validateSignatureHeader(Buffer.from(bodyBuffer).toString(), this.auth, webhookRequestSignature);
 
           console.log("Signature");
           console.log(webhookRequestSignature);
