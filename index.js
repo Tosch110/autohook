@@ -170,7 +170,6 @@ class Autohook extends EventEmitter {
             res.writeHead(403); // Action not allowed
             res.end();
           } else {
-            console.log("x-twitter-webhooks-signature validation:", validSignatureHeader)
             this.emit('event', JSON.parse(body), req);
             res.writeHead(200);
           }
