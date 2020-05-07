@@ -36,8 +36,8 @@ const getSubscriptionsCount = async (auth) => {
   const token = await bearerToken(auth);
   const requestConfig = {
     url: 'https://api.twitter.com/1.1/account_activity/all/subscriptions/count.json',
-    options: { 
-      bearer: token 
+    options: {
+      bearer: token
     },
   };
 
@@ -66,7 +66,7 @@ const deleteWebhooks = async (webhooks, auth, env) => {
     const requestConfig = {
       url: `https://api.twitter.com/1.1/account_activity/all/${env}/webhooks/${id}.json`,
       options: {
-        oauth: auth,      
+        oauth: auth,
       },
     }
 
@@ -86,6 +86,12 @@ const deleteWebhooks = async (webhooks, auth, env) => {
 const validateWebhook = (token, auth) => {
   const responseToken = crypto.createHmac('sha256', auth.consumer_secret).update(token).digest('base64');
   return {response_token: `sha256=${responseToken}`};
+}
+
+const validateSignatureHeader = (payloadBody, auth, signatureHeader) => {
+  const calculatedToken = crypto.createHmac('sha256', auth.consumer_secret).update(payloadBody).digest('base64');
+
+  return crypto.timingSafeEqual(calculatedToken, Buffer.from(signatureHeader, 'utf8'));
 }
 
 const verifyCredentials = async (auth) => {
@@ -148,6 +154,9 @@ class Autohook extends EventEmitter {
       }
 
       if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
+
+        console.log(req);
+
         let body = '';
         req.on('data', chunk => {
           body += chunk.toString();
@@ -168,20 +177,20 @@ class Autohook extends EventEmitter {
     } else if (parsedUrl.protocol !== 'https:') {
       throw new TypeError(`${webhookUrl} is not a valid URL. Your webhook must be HTTPS.`);
     }
-  
+
     console.log(`Registering ${webhookUrl} as a new webhook…`);
     const endpoint = new URL(`https://api.twitter.com/1.1/account_activity/all/${this.env}/webhooks.json`);
     endpoint.searchParams.append('url', webhookUrl);
-  
+
     const requestConfig = {
       url: endpoint.toString(),
       options: {
         oauth: this.auth,
       },
     }
-  
+
     const response = await post(requestConfig);
-  
+
     const error = tryError(
       response,
       (response) => new URIError(response, [
@@ -189,31 +198,31 @@ class Autohook extends EventEmitter {
         `Developer dashboard at https://developer.twitter.com/en/account/environments, and that`,
         `your OAuth credentials are valid and can access '${env}'. (HTTP status: ${response.statusCode})`].join(' '))
     );
-  
+
     if (error) {
       throw error;
     }
-    
+
     return response.body;
   }
 
   async getWebhooks() {
     console.log('Getting webhooks…');
-  
+
     let token = null;
     try {
       token = await bearerToken(this.auth);
     } catch (e) {
       throw e;
     }
-  
+
     const requestConfig = {
       url: `https://api.twitter.com/1.1/account_activity/all/${this.env}/webhooks.json`,
       options: {
         bearer: token,
       },
     };
-  
+
     const response = await get(requestConfig);
     const error = tryError(
       response,
@@ -221,11 +230,11 @@ class Autohook extends EventEmitter {
         `Cannot get webhooks. Please check that '${this.env}' is a valid environment defined in your`,
         `Developer dashboard at https://developer.twitter.com/en/account/environments, and that`,
         `your OAuth credentials are valid and can access '${this.env}'. (HTTP status: ${response.statusCode})`].join(' ')));
-  
+
     if (error) {
       throw error;
     }
-  
+
     return response.body;
   }
 
@@ -239,19 +248,19 @@ class Autohook extends EventEmitter {
   }
 
   async start(webhookUrl = null) {
-    
+
     if (!webhookUrl) {
       this.startServer();
       const url = await ngrok.connect(this.port);
-      webhookUrl = `${url}${WEBHOOK_ROUTE}`;      
+      webhookUrl = `${url}${WEBHOOK_ROUTE}`;
     }
-    
+
     try {
-      const webhook = await this.setWebhook(webhookUrl, this.auth, this.env);  
+      const webhook = await this.setWebhook(webhookUrl, this.auth, this.env);
       console.log('Webhook created.');
     } catch(e) {
       throw e;
-    }    
+    }
   }
 
   async subscribe({oauth_token, oauth_token_secret, screen_name = null}) {
@@ -281,7 +290,7 @@ class Autohook extends EventEmitter {
     const requestConfig = {
       url: `https://api.twitter.com/1.1/account_activity/all/${this.env}/subscriptions.json`,
       options: {
-        oauth: auth,      
+        oauth: auth,
       },
     };
 
@@ -289,14 +298,14 @@ class Autohook extends EventEmitter {
     const error = tryError(
       response,
       (response) => new UserSubscriptionError(response));
-    
+
       if (error) {
       throw error;
     }
 
     console.log(`Subscribed to ${screen_name}'s activities.`);
     updateSubscriptionCount(1);
-    return true;  
+    return true;
   }
 
   async unsubscribe(userId) {
