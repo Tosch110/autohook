@@ -126,6 +126,7 @@ class Autohook extends EventEmitter {
     env = (process.env.TWITTER_WEBHOOK_ENV || '').trim(),
     port = process.env.PORT || DEFAULT_PORT,
     headers = [],
+    validateWebhookSignature = false,
   } = {}) {
 
     Object.entries({token, token_secret, consumer_key, consumer_secret, env, port}).map(el => {
@@ -166,12 +167,15 @@ class Autohook extends EventEmitter {
         });
         req.on('end', () => {
 
-          const webhookRequestSignature = req.headers['x-twitter-webhooks-signature'];
-          const validSignatureHeader = validateSignatureHeader(Buffer.from(body).toString(), this.auth, webhookRequestSignature);
+          if(validateWebhookSignature) {
+            const webhookRequestSignature = req.headers['x-twitter-webhooks-signature'];
+            const validSignatureHeader = validateSignatureHeader(Buffer.from(body).toString(), this.auth, webhookRequestSignature);
 
-          console.log("Signature");
-          console.log(webhookRequestSignature);
-          console.log(validSignatureHeader);
+            if(!validSignatureHeader) {
+              res.writeHead(403); // Action not allowed
+              res.end();
+            }
+          }
 
           this.emit('event', JSON.parse(body), req);
           res.writeHead(200);
