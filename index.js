@@ -91,7 +91,7 @@ const validateWebhook = (token, auth) => {
 const validateSignatureHeader = (payloadBody, auth, signatureHeader) => {
   const calculatedToken = crypto.createHmac('sha256', auth.consumer_secret).update(payloadBody).digest('base64');
 
-  return crypto.timingSafeEqual(calculatedToken, Buffer.from(signatureHeader, 'utf8'));
+  return crypto.timingSafeEqual(calculatedToken, Buffer.from(signatureHeader.slice("sha256=".length), 'utf8'));
 }
 
 const verifyCredentials = async (auth) => {
@@ -155,13 +155,19 @@ class Autohook extends EventEmitter {
 
       if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
 
-        console.log(req);
-
         let body = '';
         req.on('data', chunk => {
           body += chunk.toString();
         });
         req.on('end', () => {
+
+          const webhookRequestSignature = req.headers['x-twitter-webhooks-signature'];
+          const validSignatureHeader = validateSignatureHeader(body, this.auth, webhookSignature);
+
+          console.log("Signature");
+          console.log(webhookRequestSignature);
+          console.log(validSignatureHeader);
+
           this.emit('event', JSON.parse(body), req);
           res.writeHead(200);
           res.end();
