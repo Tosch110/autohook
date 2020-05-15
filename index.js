@@ -162,7 +162,9 @@ class Autohook extends EventEmitter {
           res.end();
         });
       }
-    }).listen(this.port);
+    }).listen(this.port, () => {
+      console.log("Server listening on port :"+this.port);
+    });
   }
 
   async setWebhook(webhookUrl) {
