@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 const ngrok = require('ngrok');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const url = require('url');
 const crypto = require('crypto');
 const path = require('path');
@@ -117,6 +119,7 @@ class Autohook extends EventEmitter {
     env = (process.env.TWITTER_WEBHOOK_ENV || '').trim(),
     port = process.env.PORT || DEFAULT_PORT,
     headers = [],
+    hostServer = "",
   } = {}) {
 
     Object.entries({token, token_secret, consumer_key, consumer_secret, env, port}).map(el => {
@@ -131,6 +134,7 @@ class Autohook extends EventEmitter {
     this.env = env;
     this.port = port;
     this.headers = headers;
+    this.hostServer = hostServer;
   }
 
   startServer() {
@@ -242,7 +246,7 @@ class Autohook extends EventEmitter {
     
     if (!webhookUrl) {
       this.startServer();
-      const url = await ngrok.connect(this.port);
+      const url = this.hostserver === "" ? await ngrok.connect(this.port) : this.hostserver;
       webhookUrl = `${url}${WEBHOOK_ROUTE}`;      
     }
     
