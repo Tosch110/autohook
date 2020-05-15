@@ -252,6 +252,7 @@ class Autohook extends EventEmitter {
       webhookUrl = `${webhookUrl}${WEBHOOK_ROUTE}`;   
     }
     
+    console.log("Trying to connect with", webhookUrl);
     try {
       const webhook = await this.setWebhook(webhookUrl, this.auth, this.env);  
       console.log('Webhook created.');
