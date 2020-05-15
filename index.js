@@ -248,6 +248,8 @@ class Autohook extends EventEmitter {
     if (!webhookUrl) {
       const url = await ngrok.connect(this.port);
       webhookUrl = `${url}${WEBHOOK_ROUTE}`;      
+    } else {
+      webhookUrl = `${webhookUrl}${WEBHOOK_ROUTE}`;   
     }
     
     try {
